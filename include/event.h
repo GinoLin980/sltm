@@ -12,7 +12,8 @@ typedef enum {
   SUCCESS,   //
   FAILURE,   //
   DELAYED,   //
-  CANCELLED  //
+  CANCELLED, //
+  UNKNOWN    //
 } Status;
 
 typedef struct {
