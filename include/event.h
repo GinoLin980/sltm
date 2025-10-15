@@ -26,9 +26,8 @@ typedef struct {
 
 // parse the row csv string into Event
 Event *csv2event(char *csv_row, int *status);
-Event *new_event(const char id[MAX_ID_LEN], const char date[MAX_DATE_LEN],
-                 const char vehicle[MAX_VEHICLE_LEN],
-                 const char mission[MAX_MISSION_LEN], Status status);
-Status str2status(const char *status);
+Event *new_event(const char *id, const char *date, const char *vehicle,
+                 const char *site, const char *mission, Status status);
+Status str2status(const char *status_str);
 
 #endif // !EVENT_H
