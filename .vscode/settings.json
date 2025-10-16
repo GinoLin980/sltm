@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "*.dbclient-js": "javascript",
+        "new": "c",
+        "cstdlib": "c",
+        "locale": "c"
+    }
+}
