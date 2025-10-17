@@ -1,3 +1,4 @@
+// NOTE: AI generated, human reviewed
 #include <stdbool.h>
 #include <string.h>
 

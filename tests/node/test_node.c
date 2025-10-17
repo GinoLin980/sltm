@@ -1,3 +1,5 @@
+/* NOTE: AI generated, human reviewed, changed how it free event and add test
+         print non-empty list */
 #include "../../include/event.h"
 #include "../../include/node.h"
 #include <assert.h>
@@ -142,7 +144,7 @@ void test_delete_not_found() {
   insert_node(&head, e);
 
   int result = delete_node(&head, "NOTFOUND");
-  assert(result == -1); // Should fail
+  assert(result == NODE_ERROR_NOT_FOUND); // Should fail
   assert(head != NULL); // List unchanged
 
   free_list(&head);

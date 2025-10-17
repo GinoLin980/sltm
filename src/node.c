@@ -1,161 +1,208 @@
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 #include "../include/node.h"
 #include "../include/utils.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <strings.h>
 
 Node *new_node(const Event *event) {
-    Node *n = malloc(sizeof(Node));
-    if (n == NULL) {return NULL;}
+  Node *n = malloc(sizeof(Node));
+  if (n == NULL) {
+    return NULL;
+  }
 
-    n->data = *event;
-    n->next = NULL;
+  n->data.id = strdup(event->id);
+  n->data.date = strdup(event->date);
+  n->data.vehicle = strdup(event->vehicle);
+  n->data.mission = strdup(event->mission);
+  n->data.site = strdup(event->site);
+  n->data.status = event->status; // Value type - OK to copy
+  n->next = NULL;
 
-    return n;
+  // check if any strdup failed
+  if (!n->data.id || !n->data.date || !n->data.vehicle || !n->data.mission ||
+      !n->data.site) {
+    free_event(&n->data);
+    free(n);
+    return NULL;
+  }
+
+  return n;
 }
 
 int insert_node(Node **head, const Event *event) {
-    // validate input, addresses aren't passed
-    if (head == NULL || event == NULL) {
-        return -1;
+  // validate input, addresses aren't passed
+  if (head == NULL || event == NULL) {
+    return NODE_ERROR_BAD_PARAM;
+  }
+
+  Node *new = new_node(event);
+  if (new == NULL) {
+    return NODE_ERROR_NO_MEMORY;
+  }
+
+  // the list is empty(Node* is NULL) or `new.date` is smaller than first item
+  // in list
+  if (*head == NULL || compare_date((*head)->data.date, new->data.date) == 1) {
+    new->next = *head; // point `new.next` to original `head` or `NULL`
+    *head = new;       // let `new` being NEW `head`
+    return NODE_SUCCESS;
+  }
+
+  // copy of `*head`
+  Node *current = *head;
+
+  while (current->next != NULL) {
+    // new's date is smaller than current's next's date
+    // therefore we want to insert between current and current's next
+    if (compare_date(current->next->data.date, new->data.date) == 1) {
+      // found the current is where we want to insert;
+      break;
     }
+    // switch to next node
+    current = current->next;
+  }
 
-    Node *new = new_node(event);
+  // current -> next | new -> NULL
+  // current -> next | new -> next
+  new->next = current->next;
+  // current -> next | new -> next
+  // current -> new | new -> next
+  current->next = new;
 
-    // the list is empty(Node* is NULL) or `new.date` is smaller than first item in list
-    if (*head == NULL || date_cmp((*head)->data.date, new->data.date)) {
-        new->next = *head; // point `new.next` to original `head` or `NULL`
-        *head = new; // let `new` being NEW `head`
-        return 0;
-    }
-
-    // copy of `*head`
-    Node *current = *head;
-
-    while (current->next != NULL) {
-        // new's date is smaller than current's next's date
-        // therefore we want to insert between current and current's next
-        if (date_cmp(current->next->data.date, new->data.date)) {
-            // found the current is where we want to insert;
-            break;
-        }
-        // switch to next node
-        current = current->next;
-    }
-
-    // current -> next | new -> NULL
-    // current -> next | new -> next
-    new->next = current->next;
-    // current -> next | new -> next
-    // current -> new | new -> next
-    current->next = new;
-
-    return 0;
+  return NODE_SUCCESS;
 }
 
 int delete_node(Node **head, const char *id) {
-    // no input
-    if (head == NULL || id == NULL) {
-        return -1;
+  // no input
+  if (head == NULL || id == NULL) {
+    return NODE_ERROR_BAD_PARAM;
+  }
+
+  // there's no node in the list, can't perform deletion
+  if (*head == NULL) {
+    return NODE_ERROR_BAD_PARAM;
+  }
+
+  Node *current = *head;
+  Node *prev = NULL;
+
+  while (current != NULL) {
+    if (strcmp(current->data.id, id) == 0) {
+      if (prev == NULL) {
+        // move head of list to next one
+        *head = current->next;
+      } else {
+        // move previous' next to current's next
+        prev->next = current->next;
+      }
+
+      free_event(&current->data);
+      free(current);
+
+      return NODE_SUCCESS;
     }
+    prev = current;
+    current = current->next;
+  }
 
-    // there's no node in the list, can't perform deletion
-    if (*head == NULL) {
-        return -1;
-    }
-
-    Node *current = *head;
-    Node *prev = NULL;
-
-    while (current != NULL) {
-        if (strcmp(current->data.id, id) == 0) {
-            if (prev == NULL) {
-                // move head of list to next one
-                *head = current->next;
-            } else {
-                // move previous' next to current's next
-                prev->next = current->next;
-            }
-
-            free_event(&current->data);
-            free(current);
-            
-            return 0;
-        }
-        prev = current;
-        current = current->next;
-    }
-
-    return -1;
+  return NODE_ERROR_NOT_FOUND;
 }
 
+void range_and_print_node(Node **head, char *date1, char *date2) {
+  if (!(head && *head && date1 && date2)) {
+    printf("Bad parameters!");
+    return;
+  }
 
+  // make sure the date section is early to latest
+  if (strcmp(date1, date2) > 0) {
+    char *temp = date1;
+    date1 = date2;
+    date2 = temp;
+  }
+
+  Node *current = *head;
+
+  while (current != NULL) {
+    if (strcmp(current->data.date, date1) >= 0 &&
+        strcmp(current->data.date, date2) <= 0) {
+      print_event(&current->data);
+    }
+    current = current->next;
+  }
+}
+
+Node* find_node_by_id(Node **head, const char *id) {
+  if (!(head && *head && id)) {
+    return NULL;
+  }
+
+  Node *current = *head;
+  while (current != NULL) {
+    if (strcasecmp(current->data.id, id) == 0) {
+      return current;
+    }
+    current = current->next;
+  }
+
+  return NULL;
+}
+
+void find_and_print_node(Node **head, const char *keyword) {
+  if (!(head && *head && keyword)) {
+    return;
+  }
+
+  int count = 0;
+  Node *current = *head;
+  while (current != NULL) {
+    if (strcasestr(current->data.vehicle, keyword) ||
+        strstr(current->data.mission, keyword)) {
+      count++;
+      print_event(&current->data);
+    }
+    current = current->next;
+  }
+
+  printf("%d matched case%s\n", count, count > 2 ? "s" : "");
+}
 
 void free_list(Node **head) {
-    if (head == NULL || *head == NULL) {
-        return;
-    }
+  if (head == NULL || *head == NULL) {
+    return;
+  }
 
-    Node *current = *head;
+  Node *current = *head;
 
-    while (current != NULL) {
-        Node *next = current->next;
+  while (current != NULL) {
+    Node *next = current->next;
 
-        free_event(&current->data);
+    free_event(&current->data);
 
-        free(current);
+    free(current);
 
-        current = next;
-    }
+    current = next;
+  }
 
-    *head = NULL;
+  *head = NULL;
 }
 
 void print_list(const Node *head) {
-    if (head == NULL) {
-        printf("No item in the list!!");
-        return;
-    }
+  if (head == NULL) {
+    printf("No item in the list!!\n");
+    return;
+  }
 
-    int count = 0;
-    Node *current = head;
-    while (current != NULL) {
-        count++;
+  int count = 0;
+  Node *current = head;
+  while (current != NULL) {
+    count++;
 
-        Event event = current->data;
-        printf("ID: %s\n", event.id);
-        printf("Date: %s\n", event.date);
-        printf("Vehicle: %s\n", event.vehicle);
-        printf("Mission: %s\n", event.mission);
-        printf("Site: %s\n", event.site);
+    Event event = current->data;
+    print_event(&event);
+    current = current->next;
+  }
 
-        char *status_str;
-        switch (event.status)
-        {
-        case SUCCESS:
-            status_str = "Success";
-            break;
-        case SCHEDULED:
-            status_str = "Scheduled";
-            break;
-        case FAILURE:
-            status_str = "Failure";
-            break;
-        case DELAYED:
-            status_str = "Delayed";
-            break;
-        case CANCELLED:
-            status_str = "Cancelled";
-            break;
-        default:
-            status_str = "Unknown";
-            break;
-        }
-        printf("Status: %s\n", status_str);
-        printf("--------------------\n");
-
-        current = current->next;
-    }
-
-    printf("Items in the list: %d", count);
+  printf("Items in the list: %d\n", count);
 }
