@@ -76,23 +76,6 @@ char **read_csv(const char *filename, int *count) {
             continue;
         }
 
-        // make sure the row is actually valid before adding it
-        int status;
-        Event *event = csv2event(trimmed, &status);
-        // not sure if this is the best way to validate but it works
-        
-        if (event == NULL || status != 0) {
-            if (event != NULL) {
-                free_event(event);
-                free(event);
-            }
-            continue;
-        }
-
-        // don't need this anymore
-        free_event(event);
-        free(event);
-
         // need more space?
         if (row_count >= capacity) {
             capacity *= 2;
@@ -165,8 +148,7 @@ int export_csv(const char *filename, Node *head) {
     while (current != NULL) {
         Event *event = &current->data;
         
-        // putting quotes around everything to be safe
-        fprintf(file, "\"%s\",\"%s\",\"%s\",\"%s\",\"%s\",\"%s\"\n",
+        fprintf(file, "%s,%s,%s,%s,%s,%s\n",
                 event->id ? event->id : "",
                 event->date ? event->date : "",
                 event->vehicle ? event->vehicle : "",
