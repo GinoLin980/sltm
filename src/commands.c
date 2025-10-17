@@ -81,6 +81,313 @@ use the real new_event() function
     return CMD_SUCCESS;
 }
 
+CommandResult cmd_update(Node **head, char **args, int argc) {
+    if (argc < 2) {
+        printf("Error: Missing arguments\n");
+        printf("Usage: update <id> <field>=<value> [<field>=<value> ...]\n");
+        return CMD_ERROR_INVALID_ARGS;
+    }
+
+    const char *id = args[0];
+    
+    // Step 1: Find existing node
+    Node *existing = find_node_by_id(head, id);
+    if (existing == NULL) {
+        printf("Error: Event with ID '%s' not found\n", id);
+        return CMD_ERROR_NOT_FOUND;
+    }
+
+    // Step 2: Deep copy the event
+    Event *event_copy = new_event(
+        existing->data.id,
+        existing->data.date,
+        existing->data.vehicle,
+        existing->data.mission,
+        existing->data.site,
+        existing->data.status
+    );
+    
+    if (event_copy == NULL) {
+        printf("Error: Failed to create event copy\n");
+        return CMD_ERROR_NO_MEMORY;
+    }
+
+    // Step 3: Parse and apply updates
+    int updated = 0;
+    for (int i = 1; i < argc; i++) {
+        char *arg_copy = strdup(args[i]);
+        if (arg_copy == NULL) {
+            printf("Error: Memory allocation failed\n");
+            free_event(event_copy);
+            free(event_copy);
+            return CMD_ERROR_NO_MEMORY;
+        }
+        
+        char *equals = strchr(arg_copy, '=');
+        if (equals == NULL) {
+            printf("Error: Invalid format '%s'. Use field=value\n", args[i]);
+            free(arg_copy);
+            continue;
+        }
+        
+        *equals = '\0';
+        char *field = arg_copy;
+        char *value = equals + 1;
+        
+        // Update corresponding field
+        if (strcasecmp(field, "id") == 0) {
+            free(event_copy->id);
+            event_copy->id = strdup(value);
+            if (event_copy->id == NULL) {
+                printf("Error: Memory allocation failed\n");
+                free(arg_copy);
+                free_event(event_copy);
+                free(event_copy);
+                return CMD_ERROR_NO_MEMORY;
+            }
+            updated = 1;
+        }
+        else if (strcasecmp(field, "date") == 0) {
+            if (!validate_date(value)) {
+                printf("Error: Invalid date format '%s'\n", value);
+                free(arg_copy);
+                continue;
+            }
+            free(event_copy->date);
+            event_copy->date = strdup(value);
+            if (event_copy->date == NULL) {
+                printf("Error: Memory allocation failed\n");
+                free(arg_copy);
+                free_event(event_copy);
+                free(event_copy);
+                return CMD_ERROR_NO_MEMORY;
+            }
+            updated = 1;
+        }
+        else if (strcasecmp(field, "vehicle") == 0) {
+            free(event_copy->vehicle);
+            event_copy->vehicle = strdup(value);
+            if (event_copy->vehicle == NULL) {
+                printf("Error: Memory allocation failed\n");
+                free(arg_copy);
+                free_event(event_copy);
+                free(event_copy);
+                return CMD_ERROR_NO_MEMORY;
+            }
+            updated = 1;
+        }
+        else if (strcasecmp(field, "mission") == 0) {
+            free(event_copy->mission);
+            event_copy->mission = strdup(value);
+            if (event_copy->mission == NULL) {
+                printf("Error: Memory allocation failed\n");
+                free(arg_copy);
+                free_event(event_copy);
+                free(event_copy);
+                return CMD_ERROR_NO_MEMORY;
+            }
+            updated = 1;
+        }
+        else if (strcasecmp(field, "site") == 0) {
+            free(event_copy->site);
+            event_copy->site = strdup(value);
+            if (event_copy->site == NULL) {
+                printf("Error: Memory allocation failed\n");
+                free(arg_copy);
+                free_event(event_copy);
+                free(event_copy);
+                return CMD_ERROR_NO_MEMORY;
+            }
+            updated = 1;
+        }
+        else if (strcasecmp(field, "status") == 0) {
+            Status new_status = str2status(value);
+            if (new_status == UNKNOWN) {
+                printf("Error: Invalid status '%s'\n", value);
+                free(arg_copy);
+                continue;
+            }
+            event_copy->status = new_status;
+            updated = 1;
+        }
+        else {
+            printf("Error: Unknown field '%s'\n", field);
+        }
+        
+        free(arg_copy);
+    }
+
+    if (!updated) {
+        printf("No valid fields were updated\n");
+        free_event(event_copy);
+        free(event_copy);
+        return CMD_ERROR_INVALID_ARGS;
+    }
+
+    // Step 4: Delete old node
+    int del_status = delete_node(head, id);
+    if (del_status != NODE_SUCCESS) {
+        printf("Error: Failed to delete old node\n");
+        free_event(event_copy);
+        free(event_copy);
+        return CMD_ERROR_PARSING_FAILED;
+    }
+
+    // Step 5: Insert updated node
+    int ins_status = insert_node(head, event_copy);
+    if (ins_status != NODE_SUCCESS) {
+        printf("Error: Failed to insert updated node\n");
+        // WARNING: Original node is already deleted!
+        // This is a critical state - consider re-inserting original
+        free_event(event_copy);
+        free(event_copy);
+        return CMD_ERROR_PARSING_FAILED;
+    }
+
+    printf("Event '%s' updated successfully\n", event_copy->id);
+    
+    // Step 6: Free the temporary copy
+    free_event(event_copy);
+    free(event_copy);
+
+    return CMD_SUCCESS;
+}
+    
+// cmd_delete
+CommandResult cmd_delete(Node **head, char **args, int argc) {
+    if (argc < 1) {
+        printf("Error: Missing ID\n");
+        printf("Usage: delete <id>\n");
+        return CMD_ERROR_INVALID_ARGS;
+    }
+
+    const char *id = args[0];
+    int result = delete_node(head, id);
+    
+    if (result == 0) {
+        printf("Deleted event %s successfully\n", id);
+        return CMD_SUCCESS;
+    } else {
+        printf("Error: Event with ID %s not found\n", id);
+        return CMD_ERROR_NOT_FOUND;
+    }
+}
+
+// cmd_range
+CommandResult cmd_range(Node **head, char **args, int argc) {
+    if (argc < 2) {
+        printf("Error: Missing date range\n");
+        printf("Usage: range <start_date> <end_date>\n");
+        return CMD_ERROR_INVALID_ARGS;
+    }
+
+    const char *start_date = args[0];
+    const char *end_date = args[1];
+    
+    if (!valid_date(start_date) || !valid_date(end_date)) {
+        printf("Error: Invalid date format. Use YYYY-MM-DD\n");
+        return CMD_ERROR_INVALID_ARGS;
+    }
+
+    if (strcmp(start_date, end_date) > 0) {
+        printf("Error: Start date cannot be after end date\n");
+        return CMD_ERROR_INVALID_ARGS;
+    }
+
+    Node *current = *head;
+    int count = 0;
+    
+    printf("\nEvents in range %s to %s:\n", start_date, end_date);
+    printf("--------------------------------------------------------------------------------\n");
+    
+    while (current != NULL) {
+        if (strcmp(current->event.date, start_date) >= 0 && 
+            strcmp(current->event.date, end_date) <= 0) {
+            printf("%-10s %-12s %-15s %-30s %-20s %s\n",
+                   current->event.id,
+                   current->event.date,
+                   current->event.vehicle,
+                   current->event.mission,
+                   current->event.site,
+                   status2str(current->event.status));
+            count++;
+        }
+        current = current->next;
+    }
+    
+    printf("--------------------------------------------------------------------------------\n");
+    printf("Found %d events in the specified range\n", count);
+    return CMD_SUCCESS;
+}
+
+// cmd_find
+CommandResult cmd_find(Node **head, char **args, int argc) {
+    if (argc < 1) {
+        printf("Error: Missing keyword\n");
+        printf("Usage: find <keyword>\n");
+        return CMD_ERROR_INVALID_ARGS;
+    }
+
+    const char *keyword = args[0];
+    Node *current = *head;
+    int count = 0;
+    
+    printf("\nSearch results for '%s':\n", keyword);
+    printf("--------------------------------------------------------------------------------\n");
+    
+    char keyword_lower[100];
+    strncpy(keyword_lower, keyword, sizeof(keyword_lower) - 1);
+    to_lowercase(keyword_lower);
+    
+    while (current != NULL) {
+        char mission_lower[MAX_MISSION_LEN];
+        char vehicle_lower[MAX_VEHICLE_LEN];
+        
+        strncpy(mission_lower, current->event.mission, sizeof(mission_lower) - 1);
+        strncpy(vehicle_lower, current->event.vehicle, sizeof(vehicle_lower) - 1);
+        to_lowercase(mission_lower);
+        to_lowercase(vehicle_lower);
+        
+        if (strstr(mission_lower, keyword_lower) != NULL || 
+            strstr(vehicle_lower, keyword_lower) != NULL) {
+            printf("%-10s %-12s %-15s %-30s %-20s %s\n",
+                   current->event.id,
+                   current->event.date,
+                   current->event.vehicle,
+                   current->event.mission,
+                   current->event.site,
+                   status2str(current->event.status));
+            count++;
+        }
+        current = current->next;
+    }
+    
+    printf("--------------------------------------------------------------------------------\n");
+    printf("Found %d events matching '%s'\n", count, keyword);
+    return CMD_SUCCESS;
+}
+
+// cmd_export
+CommandResult cmd_export(Node **head, char **args, int argc) {
+    if (argc < 1) {
+        printf("Error: Missing filename\n");
+        printf("Usage: export <filename>\n");
+        return CMD_ERROR_INVALID_ARGS;
+    }
+
+    const char *filename = args[0];
+    int result = export_csv(filename, *head);
+    
+    if (result == 0) {
+        printf("Successfully exported events to %s\n", filename);
+        return CMD_SUCCESS;
+    } else {
+        printf("Error: Failed to export to file %s\n", filename);
+        return CMD_ERROR_FILE_NOT_FOUND;
+    }
+}
+
+
 // cmd_help
 CommandResult cmd_help(Node **head, char **args, int argc) {
     (void)head; (void)args; (void)argc;
