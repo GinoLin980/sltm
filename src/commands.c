@@ -294,29 +294,7 @@ CommandResult cmd_range(Node **head, char **args, int argc) {
         return CMD_ERROR_INVALID_ARGS;
     }
 
-    Node *current = *head;
-    int count = 0;
-    
-    printf("\nEvents in range %s to %s:\n", start_date, end_date);
-    printf("--------------------------------------------------------------------------------\n");
-    
-    while (current != NULL) {
-        if (strcmp(current->event.date, start_date) >= 0 && 
-            strcmp(current->event.date, end_date) <= 0) {
-            printf("%-10s %-12s %-15s %-30s %-20s %s\n",
-                   current->event.id,
-                   current->event.date,
-                   current->event.vehicle,
-                   current->event.mission,
-                   current->event.site,
-                   status2str(current->event.status));
-            count++;
-        }
-        current = current->next;
-    }
-    
-    printf("--------------------------------------------------------------------------------\n");
-    printf("Found %d events in the specified range\n", count);
+    range_and_print_node(head, (char*)start_date, (char*)end_date);
     return CMD_SUCCESS;
 }
 
@@ -329,42 +307,10 @@ CommandResult cmd_find(Node **head, char **args, int argc) {
     }
 
     const char *keyword = args[0];
-    Node *current = *head;
-    int count = 0;
-    
-    printf("\nSearch results for '%s':\n", keyword);
-    printf("--------------------------------------------------------------------------------\n");
-    
-    char keyword_lower[100];
-    strncpy(keyword_lower, keyword, sizeof(keyword_lower) - 1);
-    to_lowercase(keyword_lower);
-    
-    while (current != NULL) {
-        char mission_lower[MAX_MISSION_LEN];
-        char vehicle_lower[MAX_VEHICLE_LEN];
-        
-        strncpy(mission_lower, current->event.mission, sizeof(mission_lower) - 1);
-        strncpy(vehicle_lower, current->event.vehicle, sizeof(vehicle_lower) - 1);
-        to_lowercase(mission_lower);
-        to_lowercase(vehicle_lower);
-        
-        if (strstr(mission_lower, keyword_lower) != NULL || 
-            strstr(vehicle_lower, keyword_lower) != NULL) {
-            printf("%-10s %-12s %-15s %-30s %-20s %s\n",
-                   current->event.id,
-                   current->event.date,
-                   current->event.vehicle,
-                   current->event.mission,
-                   current->event.site,
-                   status2str(current->event.status));
-            count++;
-        }
-        current = current->next;
-    }
-    
-    printf("--------------------------------------------------------------------------------\n");
-    printf("Found %d events matching '%s'\n", count, keyword);
+
+    find_and_print_node(head, keyword);
     return CMD_SUCCESS;
+
 }
 
 // cmd_export
