@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <signal.h>
 #include <ctype.h>
 
 // Internal helper: checks if a year is a leap year
@@ -66,30 +65,3 @@ int compare_date(const char *date1, const char *date2) {
     if (t1 > t2) return 1;
     return 0;
 }
-
-// Function called when a signal like SIGINT (Ctrl+C) is received
-void graceful_shutdown(int signal) {
-    printf("\n[INFO] Received signal %d. Shutting down gracefully...\n", signal);
-
-    // Clean up memory, close files, etc.
-    // fclose(log_file);
-    // free(buffer);
-
-    exit(0);
-}
-
-// Sets up signal handlers for graceful shutdown
-void setup_signal_handler(void) {
-    struct sigaction sa;
-    sa.sa_handler = graceful_shutdown;
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = 0;
-
-    // Capture common termination signals
-    sigaction(SIGINT, &sa, NULL);   // Ctrl+C
-    sigaction(SIGTERM, &sa, NULL);  // Termination request
-}
-
-
-
-
