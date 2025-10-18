@@ -1,7 +1,7 @@
-#include "commands.h"
-#include "csv.h"
-#include "event.h"   
-#include "node.h"    
+#include "../include/commands.h"
+#include "../include/csv.h"
+#include "../include/event.h"   
+#include "../include/node.h"    
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -28,6 +28,9 @@ CommandResult cmd_load(Node **head, char **args, int argc) {
     
     if (count == 0) {
         printf("Can't load file! It might be empty\n");
+        if (csv_strs != NULL) {
+            free(csv_strs);
+        }
         return CMD_ERROR_PARSING_FAILED;
     }
 
@@ -38,6 +41,10 @@ CommandResult cmd_load(Node **head, char **args, int argc) {
         
         if (status != 0) {
             invalid_count++;
+            if (e != NULL) {
+                free_event(e);
+                free(e);
+            }
             continue;
         }
 
@@ -445,30 +452,4 @@ const Command *get_all_commands(int *count) {
     };
     *count = sizeof(commands) / sizeof(commands[0]);
     return commands;
-}
-
-
-int main(void) {
-    Node *head = NULL;
-    char input[100];
-
-    printf("Simple test (load, add, help)\n");
-    printf("Type 'help' to see commands, 'exit' to quit.\n\n");
-
-    while (1) {
-        printf("> ");
-        if (!fgets(input, sizeof(input), stdin))
-            break;
-        char temp[100];
-        strncpy(temp, input, sizeof(temp) - 1);
-        temp[sizeof(temp) - 1] = '\0';
-        to_lowercase(temp);
-        if (strncmp(temp, "exit", 4) == 0)
-            break;
-        execute_command(&head, input);
-    }
-
-    free_list(&head);
-    printf("Goodbye!\n");
-    return 0;
 }
