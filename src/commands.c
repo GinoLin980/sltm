@@ -8,7 +8,6 @@
 #include <ctype.h>
 
 // Helper: convert string to lowercase
-
 static void to_lowercase(char *str) {
     for (int i = 0; str[i]; i++) {
         str[i] = (char)tolower((unsigned char)str[i]);
@@ -24,62 +23,84 @@ CommandResult cmd_load(Node **head, char **args, int argc) {
     }
 
     const char *filename = args[0];
-    printf("Loading from file: %s (simulation for now)\n", filename);
-
-    Event *e = new_event("TEST001", "2025-10-16", "Falcon 9", "Starlink 99", "CCSFS", SUCCESS);
-    if (e == NULL) {
-        printf("Failed to allocate Event\n");
+    int count = 0;
+    char **csv_strs = read_csv(filename, &count);
+    
+    if (count == 0) {
+        printf("Can't load file! It might be empty\n");
         return CMD_ERROR_PARSING_FAILED;
     }
 
-    // insert_node to attach to linked list
-    int result = insert_node(head, e);
-    if (result != 0) {
-        printf("Failed to insert node\n");
+    int invalid_count = 0;
+    for (int i = 0; i < count; i++) {
+        int status = 0;
+        Event *e = csv2event(csv_strs[i], &status);
+        
+        if (status != 0) {
+            invalid_count++;
+            continue;
+        }
+
+        int result = insert_node(head, e);
+        if (result != 0) {
+            printf("Failed to insert node\n");
+            free_event(e);
+            free(e);
+            for (int j = 0; j < count; j++) {
+                free(csv_strs[j]);
+            }
+            free(csv_strs);
+            return CMD_ERROR_PARSING_FAILED;
+        }
+
+        printf("Loaded event %s successfully into list\n", e->id);
         free_event(e);
         free(e);
-        return CMD_ERROR_NOT_FOUND;
     }
 
-    printf("Loaded event %s successfully into list\n", e->id);
+    for (int i = 0; i < count; i++) {
+        free(csv_strs[i]);
+    }
+    free(csv_strs);
+
+    printf("Loaded %d events\nValid: %d\nInvalid: %d\n", 
+           count, count - invalid_count, invalid_count);
+
     return CMD_SUCCESS;
 }
 
 
 CommandResult cmd_add(Node **head, char **args, int argc) {
-    if (argc < 6) {
-        printf("Error: Missing arguments\n");
-        printf("Usage: add <id> <date> <vehicle> <mission> <site> <status>\n");
+    if (argc < 1) {
+        printf("Error: Missing record\n");
+        printf("Usage: add \"<id>,<date>,<vehicle>,<mission>,<site>,<status>\"\n");
         return CMD_ERROR_INVALID_ARGS;
     }
 
-   Convert status text to enum
-    Status status;
-    if (strcasecmp(args[5], "SUCCESS") == 0)
-        status = SUCCESS;
-    else if (strcasecmp(args[5], "DELAYED") == 0)
-        status = DELAYED;
-    else
-        status = SCHEDULED;
-
-use the real new_event() function
-    Event *e = new_event(args[0], args[1], args[2], args[3], args[4], status);
-    if (e == NULL) {
-        printf("Failed to create event\n");
+    const char *record = args[0];
+    int status = 0;
+    Event *e = csv2event(record, &status);
+    
+    if (status != 0 || e == NULL) {
+        printf("Error: Invalid record format\n");
         return CMD_ERROR_PARSING_FAILED;
     }
 
     int result = insert_node(head, e);
     if (result != 0) {
-        printf("Failed to insert event %s\n", args[0]);
+        printf("Failed to insert event %s\n", e->id);
         free_event(e);
         free(e);
         return CMD_ERROR_NOT_FOUND;
     }
 
-    printf("Added event %s successfully\n", args[0]);
+    printf("Added event %s successfully\n", e->id);
+    free_event(e);
+    free(e);
+    
     return CMD_SUCCESS;
 }
+
 
 CommandResult cmd_update(Node **head, char **args, int argc) {
     if (argc < 2) {
@@ -89,7 +110,7 @@ CommandResult cmd_update(Node **head, char **args, int argc) {
     }
 
     const char *id = args[0];
-    
+
     // Step 1: Find existing node
     Node *existing = find_node_by_id(head, id);
     if (existing == NULL) {
@@ -106,7 +127,7 @@ CommandResult cmd_update(Node **head, char **args, int argc) {
         existing->data.site,
         existing->data.status
     );
-    
+
     if (event_copy == NULL) {
         printf("Error: Failed to create event copy\n");
         return CMD_ERROR_NO_MEMORY;
@@ -122,18 +143,18 @@ CommandResult cmd_update(Node **head, char **args, int argc) {
             free(event_copy);
             return CMD_ERROR_NO_MEMORY;
         }
-        
+
         char *equals = strchr(arg_copy, '=');
         if (equals == NULL) {
             printf("Error: Invalid format '%s'. Use field=value\n", args[i]);
             free(arg_copy);
             continue;
         }
-        
+
         *equals = '\0';
         char *field = arg_copy;
         char *value = equals + 1;
-        
+
         // Update corresponding field
         if (strcasecmp(field, "id") == 0) {
             free(event_copy->id);
@@ -213,7 +234,7 @@ CommandResult cmd_update(Node **head, char **args, int argc) {
         else {
             printf("Error: Unknown field '%s'\n", field);
         }
-        
+
         free(arg_copy);
     }
 
@@ -237,23 +258,21 @@ CommandResult cmd_update(Node **head, char **args, int argc) {
     int ins_status = insert_node(head, event_copy);
     if (ins_status != NODE_SUCCESS) {
         printf("Error: Failed to insert updated node\n");
-        // WARNING: Original node is already deleted!
-        // This is a critical state - consider re-inserting original
         free_event(event_copy);
         free(event_copy);
         return CMD_ERROR_PARSING_FAILED;
     }
 
     printf("Event '%s' updated successfully\n", event_copy->id);
-    
+
     // Step 6: Free the temporary copy
     free_event(event_copy);
     free(event_copy);
 
     return CMD_SUCCESS;
 }
-    
-// cmd_delete
+
+
 CommandResult cmd_delete(Node **head, char **args, int argc) {
     if (argc < 1) {
         printf("Error: Missing ID\n");
@@ -263,7 +282,7 @@ CommandResult cmd_delete(Node **head, char **args, int argc) {
 
     const char *id = args[0];
     int result = delete_node(head, id);
-    
+
     if (result == 0) {
         printf("Deleted event %s successfully\n", id);
         return CMD_SUCCESS;
@@ -273,7 +292,7 @@ CommandResult cmd_delete(Node **head, char **args, int argc) {
     }
 }
 
-// cmd_range
+
 CommandResult cmd_range(Node **head, char **args, int argc) {
     if (argc < 2) {
         printf("Error: Missing date range\n");
@@ -283,7 +302,7 @@ CommandResult cmd_range(Node **head, char **args, int argc) {
 
     const char *start_date = args[0];
     const char *end_date = args[1];
-    
+
     if (!valid_date(start_date) || !valid_date(end_date)) {
         printf("Error: Invalid date format. Use YYYY-MM-DD\n");
         return CMD_ERROR_INVALID_ARGS;
@@ -298,7 +317,7 @@ CommandResult cmd_range(Node **head, char **args, int argc) {
     return CMD_SUCCESS;
 }
 
-// cmd_find
+
 CommandResult cmd_find(Node **head, char **args, int argc) {
     if (argc < 1) {
         printf("Error: Missing keyword\n");
@@ -310,10 +329,9 @@ CommandResult cmd_find(Node **head, char **args, int argc) {
 
     find_and_print_node(head, keyword);
     return CMD_SUCCESS;
-
 }
 
-// cmd_export
+
 CommandResult cmd_export(Node **head, char **args, int argc) {
     if (argc < 1) {
         printf("Error: Missing filename\n");
@@ -323,7 +341,7 @@ CommandResult cmd_export(Node **head, char **args, int argc) {
 
     const char *filename = args[0];
     int result = export_csv(filename, *head);
-    
+
     if (result == 0) {
         printf("Successfully exported events to %s\n", filename);
         return CMD_SUCCESS;
@@ -334,14 +352,19 @@ CommandResult cmd_export(Node **head, char **args, int argc) {
 }
 
 
-// cmd_help
 CommandResult cmd_help(Node **head, char **args, int argc) {
-    (void)head; (void)args; (void)argc;
+    (void)head; 
+    (void)args; 
+    (void)argc;
 
     printf("\nAvailable commands:\n");
-    printf("  load <file>                     - Load events (simulated)\n");
-    printf("  add <id> <date> <vehicle> <mission> <site> <status>\n");
-    printf("                                  - Add new event to timeline\n");
+    printf("  load <file>                     - Load events from CSV\n");
+    printf("  add \"<record>\"                  - Add new event (CSV format)\n");
+    printf("  update <id> <field>=<value>     - Update event fields\n");
+    printf("  delete <id>                     - Delete event by ID\n");
+    printf("  range <start_date> <end_date>   - Show events in date range\n");
+    printf("  find <keyword>                  - Search by keyword\n");
+    printf("  export <file>                   - Export to CSV file\n");
     printf("  help                            - Show this help message\n\n");
     return CMD_SUCCESS;
 }
@@ -351,46 +374,74 @@ CommandResult execute_command(Node **head, const char *input) {
     if (input == NULL || strlen(input) == 0)
         return CMD_SUCCESS;
 
-    // remove newline
-    size_t len = strlen(input);
-    if (len > 0 && input[len - 1] == '\n')
-        ((char *)input)[len - 1] = '\0';
-
-    char buffer[256];
+    char buffer[512];
     strncpy(buffer, input, sizeof(buffer) - 1);
     buffer[sizeof(buffer) - 1] = '\0';
-    to_lowercase(buffer);
 
-    char *args[10];
+    // Remove newline
+    size_t len = strlen(buffer);
+    if (len > 0 && buffer[len - 1] == '\n')
+        buffer[len - 1] = '\0';
+
+    // Parse arguments, handling quoted strings
+    char *args[20];
     int argc = 0;
-    char *token = strtok(buffer, " ");
-    while (token != NULL && argc < 10) {
-        args[argc++] = token;
-        token = strtok(NULL, " ");
+    
+    char *p = buffer;
+    while (*p && argc < 20) {
+        while (*p == ' ') p++;
+        if (*p == '\0') break;
+        
+        if (*p == '"') {
+            p++;
+            args[argc++] = p;
+            while (*p && *p != '"') p++;
+            if (*p == '"') {
+                *p = '\0';
+                p++;
+            }
+        } else {
+            args[argc++] = p;
+            while (*p && *p != ' ') p++;
+            if (*p) {
+                *p = '\0';
+                p++;
+            }
+        }
     }
 
     if (argc == 0) return CMD_SUCCESS;
-    const char *cmd_name = args[0];
+
+    // Convert ONLY command name to lowercase
+    char cmd_lower[50];
+    strncpy(cmd_lower, args[0], sizeof(cmd_lower) - 1);
+    cmd_lower[sizeof(cmd_lower) - 1] = '\0';
+    to_lowercase(cmd_lower);
 
     int cmd_count;
     const Command *commands = get_all_commands(&cmd_count);
 
     for (int i = 0; i < cmd_count; i++) {
-        if (strcmp(cmd_name, commands[i].name) == 0) {
+        if (strcmp(cmd_lower, commands[i].name) == 0) {
             return commands[i].handler(head, args + 1, argc - 1);
         }
     }
 
-    printf("Unknown command: %s\n", cmd_name);
+    printf("Unknown command: %s\n", cmd_lower);
     return CMD_ERROR_UNKNOWN_COMMAND;
 }
 
 
 const Command *get_all_commands(int *count) {
     static const Command commands[] = {
-        {"load", cmd_load, "load <filename>", 1},
-        {"add",  cmd_add,  "add <id> <date> <vehicle> <mission> <site> <status>", 6},
-        {"help", cmd_help, "help", 0}
+        {"load",   cmd_load,   "load <filename>", 1},
+        {"add",    cmd_add,    "add \"<record>\"", 1},
+        {"update", cmd_update, "update <id> <field>=<value>", 2},
+        {"delete", cmd_delete, "delete <id>", 1},
+        {"range",  cmd_range,  "range <start_date> <end_date>", 2},
+        {"find",   cmd_find,   "find <keyword>", 1},
+        {"export", cmd_export, "export <filename>", 1},
+        {"help",   cmd_help,   "help", 0}
     };
     *count = sizeof(commands) / sizeof(commands[0]);
     return commands;
