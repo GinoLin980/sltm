@@ -1,5 +1,7 @@
+// NOTE: AI generated, human reviewed
 #include "../../include/event.h"
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #include <strings.h> // for strcasecmp
 
@@ -53,4 +55,36 @@ void free_event(Event *event) {
   event->vehicle = NULL;
   event->mission = NULL;
   event->site = NULL;
+}
+
+void print_event(Event *event) {
+  printf("ID: %s\n", event->id);
+  printf("Date: %s\n", event->date);
+  printf("Vehicle: %s\n", event->vehicle);
+  printf("Mission: %s\n", event->mission);
+  printf("Site: %s\n", event->site);
+
+  char *status_str;
+  switch (event->status) {
+  case SUCCESS:
+    status_str = "Success";
+    break;
+  case SCHEDULED:
+    status_str = "Scheduled";
+    break;
+  case FAILURE:
+    status_str = "Failure";
+    break;
+  case DELAYED:
+    status_str = "Delayed";
+    break;
+  case CANCELLED:
+    status_str = "Cancelled";
+    break;
+  default:
+    status_str = "Unknown";
+    break;
+  }
+  printf("Status: %s\n", status_str);
+  printf("--------------------\n");
 }
