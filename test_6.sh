@@ -7,6 +7,7 @@ echo ""
 
 ./sltm << EOF
 load space_launches.csv
+find starlink
 delete SLV010
 find starlink
 exit

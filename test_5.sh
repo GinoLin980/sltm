@@ -7,8 +7,9 @@ echo ""
 
 ./sltm << EOF
 load space_launches.csv
+range 2025-03-01 2025-03-01
 update SLV005 status=Success
-find SLV005
+range 2025-03-01 2025-03-01
 exit
 EOF
 

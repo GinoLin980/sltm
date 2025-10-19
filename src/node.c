@@ -123,14 +123,18 @@ void range_and_print_node(Node **head, char *date1, char *date2) {
   }
 
   Node *current = *head;
+  int count = 0;
 
   while (current != NULL) {
     if (strcmp(current->data.date, date1) >= 0 &&
         strcmp(current->data.date, date2) <= 0) {
       print_event(&current->data);
+      count++;
     }
     current = current->next;
   }
+
+  printf("found %d event%s\n", count, count > 1 ? "s" : "");
 }
 
 Node* find_node_by_id(Node **head, const char *id) {
@@ -158,7 +162,7 @@ void find_and_print_node(Node **head, const char *keyword) {
   Node *current = *head;
   while (current != NULL) {
     if (strcasestr(current->data.vehicle, keyword) ||
-        strstr(current->data.mission, keyword)) {
+        strcasestr(current->data.mission, keyword)) {
       count++;
       print_event(&current->data);
     }

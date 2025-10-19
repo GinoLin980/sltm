@@ -6,6 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <ctype.h>
 
 // Helper: convert string to lowercase
@@ -85,7 +86,7 @@ CommandResult cmd_add(Node **head, char **args, int argc) {
         return CMD_ERROR_INVALID_ARGS;
     }
 
-    const char *record = args[0];
+    char *record = args[0];
     int status = 0;
     Event *e = csv2event(record, &status);
     

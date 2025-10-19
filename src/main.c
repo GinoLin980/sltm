@@ -41,7 +41,7 @@ int main(void) {
     char input[512];
     
     while (1) {
-        printf("sltm> ");
+        printf("\nsltm> ");
         fflush(stdout);  // Ensure prompt is displayed
         
         if (!fgets(input, sizeof(input), stdin)) {
