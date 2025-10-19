@@ -1,5 +1,21 @@
 # Our Tests
 
+## How to Run the Tests
+
+We made shell scripts so you don't have to type everything manually. Just run:
+```bash
+bash test_1.sh  # loads the CSV
+bash test_2.sh  # tests date range filtering
+bash test_3.sh  # searches for starlink
+bash test_4.sh  # adds a new record
+bash test_5.sh  # updates a record
+bash test_6.sh  # deletes a record
+```
+
+Or if you want to run them manually, the commands are in each test section below.
+
+----
+
 Our group made 6 tests using the space_launches.csv file we created.
 
 Dataset has 34 total entries: 27 valid launch records and 7 invalid ones for testing error handling
