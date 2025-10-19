@@ -195,7 +195,7 @@ void print_list(const Node *head) {
   }
 
   int count = 0;
-  Node *current = head;
+  const Node *current = head;
   while (current != NULL) {
     count++;
 

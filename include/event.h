@@ -22,7 +22,7 @@ typedef struct {
 // parse the row csv string into Event
 Event *csv2event(char *csv_row, int *status);
 Event *new_event(const char *id, const char *date, const char *vehicle,
-                 const char *site, const char *mission, Status status);
+                 const char *mission, const char *site, Status status);
 Status str2status(const char *status_str);
 void print_event(Event *event);
 void free_event(Event *event);

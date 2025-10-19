@@ -7,15 +7,15 @@
 #include <ctype.h>
 
 Event *new_event(const char *id, const char *date, const char *vehicle,
-                   const char *site, const char *mission, Status status) {
+                   const char *mission, const char *site, Status status) {
 
     if (date == NULL || strlen(date) != 10) {
         fprintf(stderr, "Invalid data: Date is NULL or length is not 10.\n");
         return NULL;
     }
 
-    if (!valid_date(date)) {
-        fprintf(stderr, "Invalid date: %s", date);
+    if (!validate_date(date)) {
+        fprintf(stderr, "Invalid date: %s\n", date);
         return NULL;
     }
 
@@ -53,8 +53,8 @@ Event *new_event(const char *id, const char *date, const char *vehicle,
     event->id = strdup(id);
     event->date = strdup(date);
     event->vehicle = strdup(vehicle);
-    event->site = strdup(site);
     event->mission = strdup(mission);
+    event->site = strdup(site);
     event->status = status;
     
     if (!event->id || !event->date || !event->vehicle || !event->site || !event->mission) {
@@ -82,7 +82,7 @@ Event *csv2event(char *csv_row, int *status) {
         return NULL;
     }
 
-    // Parse CSV fields: id,date,vehicle,site,mission,status
+    // Parse CSV fields: id,date,vehicle,mission,site,status
     char *fields[6];
     int field_count = 0;
     char *token = strtok(row_copy, ",");
@@ -183,5 +183,4 @@ void free_event(Event *event) {
     free(event->vehicle);
     free(event->mission);
     free(event->site);
-    free(event);
 }
