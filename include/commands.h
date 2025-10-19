@@ -11,7 +11,8 @@ typedef enum {
   CMD_ERROR_FILE_NOT_FOUND,
   CMD_ERROR_PARSING_FAILED,
   CMD_ERROR_NOT_FOUND,
-  CMD_ERROR_UNKNOWN_COMMAND
+  CMD_ERROR_UNKNOWN_COMMAND,
+  CMD_ERROR_NO_MEMORY
 } CommandResult;
 
 // define a function pointer type called CommandHandler that return
