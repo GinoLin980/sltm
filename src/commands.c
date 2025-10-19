@@ -2,6 +2,7 @@
 #include "../include/csv.h"
 #include "../include/event.h"   
 #include "../include/node.h"    
+#include "../include/utils.h"    
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -310,7 +311,7 @@ CommandResult cmd_range(Node **head, char **args, int argc) {
     const char *start_date = args[0];
     const char *end_date = args[1];
 
-    if (!valid_date(start_date) || !valid_date(end_date)) {
+    if (!validate_date(start_date) || !validate_date(end_date)) {
         printf("Error: Invalid date format. Use YYYY-MM-DD\n");
         return CMD_ERROR_INVALID_ARGS;
     }
