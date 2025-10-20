@@ -1,35 +1,89 @@
-# SLTM
+# SLTM - Space Launch Tracking Manager
 
-## universal util functions(will reuse in many func)
+A simple C program for managing space launch records using linked lists.
 
-- `validate date`(for `load <file>`, `add <record>`, `range <start_date> <end_date>`, `update <id>..`) returns `bool`
-- `compare date`, assert input is valid, returns bool
+## Features
 
-## similar concept commands(can be built for one person)
+- **Add, update, and manage space launch records**
+- **Load and export data from CSV files**
+- **Search and filter launches by date ranges**
+- **Interactive command-line interface**
+- **Memory management with linked lists**
 
-- `add` and `update`
+## Project Structure
 
-## other functions in consider
+```
+├── include
+│   ├── commands.h
+│   ├── csv.h
+│   ├── event.h
+│   ├── node.h
+│   └── utils.h
+├── src
+│   ├── commands.c
+│   ├── csv.c
+│   ├── event.c
+│   ├── main.c
+│   ├── node.c
+│   └── utils.c
+├── Makefile
+├── memory_results.txt
+├── Our_Tests.md
+├── README.md
+├── space_launches.csv
+├── test_1.sh
+├── test_2.sh
+├── test_3.sh
+├── test_4.sh
+├── test_5.sh
+└── test_6.sh
+```
+ 
+## Building and Running
 
-- graceful shutdown when receiving signal(ctrl-c), free memory etc.
+### Build the project:
+```bash
+make
+```
 
----
+### Run the program:
+```bash
+./sltm
+```
 
-Use the same linked list unless load is called more than one time
+### Available Commands:
+- `help` - Show available commands
+- `load <filename>` - Load data from CSV file
+- `add <record>` - Add a new launch record
+- `update <id> <field>=<value>` - Update a launch record
+- `delete <id>` - delete a launch record by search id
+- `find <vehicle/mission>` - insensitive search on vehicle or mission
+- `range <start_date> <end_date>` - Show launches in date range
+- `export <filename>` - Save data to CSV file
+- `exit` - Quit the program(or use `ctrl-c`)
 
----
-Make main function stay clean that only main loop in it. And write functions in other headers and sources
+## Example Usage
 
----
+```
+sltm> load space_launches.csv
+sltm> add "L2024-001,2024-03-15,Falcon 9,Starlink-6L,CCSFS,SUCCESS"
+sltm> range 2024-01-01 2024-12-31
+sltm> exit
+```
 
-## Divide functions into different source files
+## Data Structure
 
-- For `commands.c` `commands.h`, it is responsible for interpret commands and parse arguments, which calls the corresponding function afterward, and the text output.
+Each space launch record contains:
+- **ID**: Unique identifier
+- **Date**: Launch date (YYYY-MM-DD)
+- **Vehicle**: Rocket/spacecraft name
+- **Mission**: Mission name
+- **Site**: Launch site
+- **Status**: Launch status (SCHEDULED, SUCCESS, FAILURE, DELAYED, CANCELLED)
 
-- `csv.c` `csv.h` are responsible for loading and exporting CSV files
+## Notes
 
-- `event.c` `event.h` are where event and it's operation sits, like `add`(new data, not new node)
-
-- `utils.c` `utils.h` are [universal functions](#universal-util-functionswill-reuse-in-many-func)
-
-- `node.c` `node.h` are for linked list node operation like `add`(connect nodes) `free` etc.
+- Uses linked lists for dynamic data storage
+- Implements proper memory management
+- Includes graceful handling of Ctrl+C interruption
+- Follows modular C programming practices
