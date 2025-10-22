@@ -2,6 +2,10 @@
 
 A simple C program for managing space launch records using linked lists.
 
+[GitHub Repository Link(final repo)](https://github.com/GinoLin980/sltm)
+
+[GitLab Repo Link(initial repo)](https://gitlab.com/GinoLin980/sltm)
+
 ## Features
 
 - **Add, update, and manage space launch records**
